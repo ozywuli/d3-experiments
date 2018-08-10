@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+
+<style>
+
+.axis { font: 14px sans-serif; }
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 2px;
+}
+
+
+</style>
+
+<body>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.11.0/d3.min.js"></script>
+<script>
+
+var margin = {
+    top: 20,
+    right: 20,
+    bottom: 70,
+    left: 50
+}
+
+var width = 960 - margin.left - margin.right;
+var height = 500 - margin.top - margin.bottom;
+
+var parseTime = d3.timeParse('%d-%b-%y');
+
+var x = d3.scaleTime().range([0, width]);
+var y = d3.scaleLinear().range([height, 0]);
+
+var valueLine = d3.line()
+    .x(function(d) {
+        return x(d.date);
+    })
+    .y(function(d) {
+        return y(d.close);
+    });
+
+var svg = d3.select('body').append('svg')
+
+svg
+    .attr('width', width + margin.left + margin.right)
+    .attr('height', height + margin.top + margin.bottom);
+
+var g = svg.append('g');
+
+g.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+
+d3.csv('data/stock-close.csv', function(error, data) {
+    if (error) {
+        throw error;
+    }
+
+    data.forEach(function(d) {
+        d.date = parseTime(d.date);
+        d.close = +d.close;
+    });
+
+    x.domain(d3.extent(data, function(d) {
+        return d.date;
+    }));
+
+    y.domain([0, d3.max(data, function(d) { 
+        return d.close; 
+    })]);
+
+    g.append('path')
+        .data([data])
+        .attr('class', 'line')
+        .attr('d', valueLine);
+
+    g.append('g')
+        .attr('transform', 'translate(0,' + height + ')')
+        .call(d3.axisBottom(x).ticks(10))
+        .selectAll('text')
+            .style('text-anchor', 'end')
+            .attr('dx', '-0.8em')
+            .attr('dy', '0.15em')
+            .attr('transform', 'rotate(-60)');
+
+    g.append('g')
+        .attr('class', 'axis')
+        .call(d3.axisLeft(y));
+
+});
+
+
+</script>
+
+</body>
+</html>

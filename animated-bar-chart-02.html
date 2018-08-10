@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Animated Bar Chart</title>
+
+
+<style>
+
+rect {
+  fill: steelblue;
+}
+
+rect:hover {
+  fill: brown;
+}
+
+.axis--x path,
+.axis--y path 
+{
+    stroke: none;
+    /*stroke-dasharray: 3400, 400;*/
+}
+
+
+.tick line {
+    opacity: 0.1;
+}
+
+.axis--x .tick line {
+    display: none;
+}
+
+
+</style>
+
+</head>
+<body>
+
+<div class="graph">
+    <svg width="1960" height="500"></svg>    
+</div>
+
+
+<button class="calories">Calories</button>
+<button class="protein">Protein</button>
+<button class="servingSize">Serving Size</button>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenMax.min.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+
+/**
+ * 
+ */
+let DATA;
+
+let currentCategory = 'calories';
+
+/**
+ * 
+ */
+var svg = d3.select('svg');
+
+/**
+ * 
+ */
+var margin = {
+    top: 20,
+    right: 0,
+    bottom: 30,
+    left: 40
+}
+
+/**
+ * 
+ */
+var width = +svg.attr('width') - margin.left - margin.right;
+
+/**
+ * 
+ */
+var height = +svg.attr('height') - margin.top - margin.bottom;
+
+/**
+ * 
+ */
+var x = d3.scaleBand().rangeRound([0, width]).padding(0.2);
+
+/**
+ * 
+ */
+var y = d3.scaleLinear().rangeRound([height, 0]);
+
+
+
+// gridlines in y axis function
+// function make_y_gridlines() {       
+//     return d3.axisLeft(y)
+//         .ticks(5)
+// }
+
+/**
+ * 
+ */
+var group = svg.append('g')
+    .attr('class', 'group')
+    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+
+/**
+ * 
+ */
+let xAxis = group.append('g')
+    .attr('class', 'axis axis--x')
+    .attr('transform', `translate( 0, ${height} )`)
+    // .style('text-anchor', 'end')
+    // .attr('dx', '-0.8em')
+    // .attr('dy', '0.15em')
+    // .attr('transform', 'rotate(-45)');
+
+/**
+ * 
+ */
+let yAxis = group.append('g')
+    .attr('class', 'axis axis--y');
+
+/**
+ * 
+ */
+let bars = group.append('g')
+    .attr('class', 'bars');
+
+/**
+ * 
+ */
+d3.csv('data/pandaexpress.csv', function(d) {
+    // convert all "number" values to be integers
+    for (datum in d) {
+        if (datum !== 'name') {
+            d[datum] = +d[datum]
+        }
+    }
+    return d;
+}, function(error, data) {
+    if (error) {
+        throw error;
+    }
+
+    init(data);
+});
+
+/**
+ * 
+ */
+function preprocess(data, type) {
+    let newData = data.map((d, i) => ({
+        id: i,
+        name: d.name,
+        value: d[type]
+    }));
+
+    return newData.sort(function(x, y) {
+        return d3.descending(x.value, y.value);
+    })
+
+}
+
+/**
+ * 
+ */
+function init(data) {
+    DATA = data;
+    update(preprocess(DATA, currentCategory));
+}
+
+/**
+ * 
+ */
+let initial = true;
+
+
+/**
+ * 
+ */
+function update(data) {
+    // map x data to x range
+    x.domain(data.map(function(d) { 
+        return d.name; 
+    }));
+    // map y data to y range
+    y.domain([0, d3.max(data, function(d) { 
+        return d.value;  
+    })]);
+
+
+    /*------------------------------------*\
+      AXIS
+    \*------------------------------------*/
+
+        /*------------------------------------*\
+          ENTER
+        \*------------------------------------*/
+        if (initial) {
+            xAxis
+                .call(d3.axisBottom(x).tickPadding(15))
+            yAxis
+                .call(d3.axisLeft(y).ticks(10).tickSize(-width).tickPadding(5))
+        } else {
+
+            let TL = new TimelineMax({
+                onComplete() {
+                    xAxis
+                        .call(d3.axisBottom(x))
+                    yAxis
+                        .call(d3.axisLeft(y).ticks(10).tickSize(-width))
+
+                    let TLafter = new TimelineMax({
+                        onComplete() {
+
+                        }
+                    });
+
+                    TLafter
+                        .addLabel('start')
+                        .staggerFromTo(
+                            'text',
+                            0.5,
+                            {
+                                opacity: 0,
+                                scale: 0,
+                            },
+                            {
+                                opacity: 1,
+                                scale: 1,
+                                ease: Elastic. easeOut.config( 1, 0.3)
+                            },
+                            0.01
+                        )
+                        .fromTo(
+                            '.axis--y line',
+                            0.5,
+                            {
+                                opacity: 0
+                            },
+                            {
+                                opacity: 0.1
+                            },
+                            'start'
+                        )
+                }
+            })
+
+            TL
+                .addLabel('start')
+                .fromTo(
+                    'text',
+                    0.5,
+                    {
+                        opacity: 1,
+                        scale: 1,
+
+                    },
+                    {
+                        opacity: 0,
+                        scale: 0,
+                        transformOrigin:'50% 50%'
+                    }
+                )
+                .fromTo(
+                    '.axis--y line',
+                    0.5,
+                    {
+                        opacity: 0.1
+                    },
+                    {
+                        opacity: 0
+                    },
+                    'start'
+                )
+
+        }
+
+
+    /*------------------------------------*\
+      BAR
+    \*------------------------------------*/
+    let bar = bars.selectAll('rect')
+        .data(data, (d) => {
+            return d.value;
+        });
+
+        let oldY = [];
+        let initDuration;
+        let initDelay;
+
+        if (initial) {
+            initDuration = 750;
+            initDelay = 0;
+        } else 
+        {
+            initDuration = 0;
+            initDelay = 750;
+        }
+
+        /*------------------------------------*\
+          ENTER SELECTION
+        \*------------------------------------*/
+        bar.enter().append('rect')
+            .attr('class', 'enter')
+            .attr('x', function(d) { 
+                return x(d.name);
+             })
+            .attr('y', function(d) { 
+                return height; 
+            })
+            .attr('width', x.bandwidth())
+            .transition()
+            .duration(initDuration)
+            .delay(initDelay)
+                .attr('y', function(d) { 
+                    oldY.push(y(d.value));
+                    return y(d.value); 
+                })
+                .attr('height', function(d) { 
+                    return height - y(d.value); 
+                })
+
+
+        /*------------------------------------*\
+          EXIT SELECTION
+        \*------------------------------------*/
+        bar
+            .exit()
+            .attr("class", "exit")
+                .transition()
+                .duration(750)
+                    .attr('y', function(d, i) { 
+                        return oldY[i]; 
+                    })
+                    .attr('height', function(d, i) { 
+                        return height - oldY[i]; 
+                    })
+            .remove()
+
+
+
+
+        /*------------------------------------*\
+          INITIAL IS NO LONGER TRUE
+        \*------------------------------------*/
+        initial = false;
+
+}
+
+/**
+ * 
+ */
+$('button').on('click', (e) => {
+    let thisTarget = e.target;
+    let $thisTarget = $(thisTarget);
+    let thisTargetClass = $thisTarget.attr('class');
+
+    if (currentCategory !== thisTargetClass) {
+        update(preprocess(DATA, thisTargetClass));
+        currentCategory = thisTargetClass;    
+    }
+});
+
+
+
+</script>
+
+
+</body>
+</html>

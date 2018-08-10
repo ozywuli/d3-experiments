@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Updating bar chart</title>
+</head>
+<body>
+
+<div class="chart"></div>
+<script src="https://d3js.org/d3.v4.0.0-alpha.21.min.js"></script>
+
+<script>
+const baseSettings = {
+    data: [10, 20, 40, 70, 50, 30, 90, 120, 5, 65, 75],
+    width: 800,
+    height: 400,
+    barWidth: 36,
+    barGap: 4
+}
+
+const extendedSettings = {
+    innerHeight: baseSettings.height - 20,
+}
+
+const settings = Object.assign(baseSettings, extendedSettings);
+
+
+function preprocess(data) {
+    data = d3.shuffle([...data]);
+    return data.map((d, i) => ({
+        id: i,
+        value: d
+    }))
+}
+
+let scale = d3.scaleLinear()
+    .domain([0, d3.max(settings.data)])
+    .range([0, settings.innerHeight]);
+
+function y(d) {
+    return settings.height - scale(d.value);
+}
+
+function height(d) {
+    return scale(d.value);
+}
+
+let svg = d3.select('body').append('svg')
+    .attr('width', settings.width)
+    .attr('height', settings.height)
+    .append('g');
+
+function update(data) {
+    let t = d3.transition()
+        .duration(750)
+
+    let bar = svg.selectAll('g')
+        .data(data, (d) => {
+            return d.id
+        })
+
+    bar
+        .exit()
+        .remove();
+
+    bar
+        .transition(t)
+        .attr('transform', (d, i) => {
+            return `translate(${i * (settings.barWidth + settings.barGap)}, ${y(d)})`;
+        })
+
+    bar
+        .select('rect')
+        .transition(t)
+        .attr('height', height)
+    
+    bar
+        .select('text')
+        .transition(t)
+        .tween('text', function(d) {
+            let v0 = this.textContent || '0';
+            let v1 = d.value;
+            let i = d3.interpolateRound(v0, v1);
+
+            return (t) => {
+                this.textContent = i(t);
+            }
+        })
+    
+    let barEnter = bar.enter()
+        .append('g')
+        .attr('transform', (d, i) => {
+            return `translate(
+                ${i * (settings.barWidth + settings.barGap)}, 
+                ${settings.innerHeight})
+            `;
+        })
+    
+    barEnter
+        .transition(t)
+        .attr('transform', (d, i) => {
+            return `translate(
+                ${i * (settings.barWidth + settings.barGap)},
+                ${y(d)}
+            )`;
+        })
+
+    let rect = barEnter.append('rect')
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', settings.barWidth)
+        .attr('height', 0)
+
+    rect
+        .transition(t)
+        .attr('height', height)
+
+    let gee = barEnter.append('g');
+
+    let text = barEnter.append('g')
+        .append('text')
+        .text((d) => {
+            return d.value
+        })
+        .attr('text-anchor', 'middle')
+        .attr('dx', settings.barWidth / 2)
+        .attr('dy', -2);
+} // end update()
+
+update(preprocess(settings.data));
+
+d3.interval(() => {
+    update(preprocess(settings.data))
+}, 2000);
+
+
+</script>
+
+</body>
+</html>
+

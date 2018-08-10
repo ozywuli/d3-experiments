@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>General Update Pattern 02</title>
+
+<style>
+
+text {
+  font: bold 48px monospace;
+}
+
+.enter {
+  fill: green;
+}
+
+.update {
+  fill: #333;
+}
+
+</style>
+
+</head>
+<body>
+
+<svg width="960" height="500"></svg>
+<button>Update</button>
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+
+var alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
+
+var svg = d3.select('svg');
+var width = +svg.attr('width')
+var height = +svg.attr('height');
+var g = svg.append('g').attr('transform', 'translate(32,' + (height / 2) + ')');
+
+function update(data) {
+    var text = g.selectAll('text')
+        .data(data, function(d) {
+            return d;
+        });
+
+    text.attr('class', 'update');
+
+    text.enter().append('text')
+        .attr('class', 'enter')
+        .attr('dy', '0.35em')
+        .text(function(d) {
+            return d;
+        })
+        .merge(text)
+            .attr('x', function(d, i) {
+                return i * 32;
+            });
+
+    text.exit().remove();
+}
+
+update(alphabet);
+
+document.querySelector('button').addEventListener('click', function() {
+  update(d3.shuffle(alphabet)
+      .slice(0, Math.floor(Math.random() * 26))
+      .sort());
+}, false);
+
+
+
+</script>
+
+
+</body>
+</html>

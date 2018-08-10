@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+<style>
+
+.bar {
+  fill: steelblue;
+}
+
+.bar:hover {
+  fill: brown;
+}
+
+
+</style>
+</head>
+
+<body>
+<svg width="960" height="500"></svg>
+
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+let svg = d3.select('svg');
+let margin = {
+    top: 20,
+    right: 20,
+    bottom: 30,
+    left: 40
+}
+let width = +svg.attr('width') - margin.left - margin.right;
+let height = +svg.attr('height') - margin.top - margin.bottom;
+
+let x = d3.scaleLinear().rangeRound([0, width]);
+let y = d3.scaleBand().rangeRound([height, 0]).padding(0);
+
+let g = svg.append('g')
+    .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+d3.csv('data.csv', (d) => {
+    d.frequency = +d.frequency;
+    return d;
+}, (error, data) => {
+    if (error) {
+        throw error;
+    }
+
+    // Map x domain
+    x.domain([0, d3.max(data, (d) => { return d.frequency; })]);
+
+    // Append x axis
+    g.append('g')
+        .attr('class', 'axis axis--x')
+        .attr('transform', `translate(0, ${height})`)
+        .call(d3.axisBottom(x).ticks(10, '%'))
+
+    // Map y domain
+    y.domain(data.map((d) => {
+        return d.letter;
+    }))
+
+    // Append y axis
+    g.append('g')
+        .attr('class', 'axis axis--y')
+        .call(d3.axisLeft(y))
+
+
+    // append bars
+    g.selectAll('.bar')
+        .data(data)
+        .enter().append('rect')
+            .attr('class', 'bar')
+            .attr('x', 0)
+            .attr('y', (d) => { 
+                console.log(y(d.letter));
+                return y(d.letter) + 8; 
+            })
+            .attr('width', (d) => { 
+                return x(d.frequency); 
+            })
+            .attr('height', '1px')
+            
+
+
+})
+
+</script>
+
+</body>
+
+</html>

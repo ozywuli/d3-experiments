@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>responsive bar chart 3</title>
+
+    <style>
+        .bar {
+            fill: steelblue;
+        }
+        
+        .bar:hover {
+            fill: brown;
+        }
+        
+        .axis--x path {
+            display: none;
+        }   
+    </style>
+
+</head>
+<body>
+
+<svg></svg>
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+
+<script>
+
+var svg = d3.select('svg');
+var g = svg.append('g');
+var x;
+var y;
+
+let baseSettings = {
+    margin: {
+        top: 20,
+        right: 20,
+        bottom: 30,
+        left: 40
+    }
+}
+
+let extendedSettings = {
+    width: +svg.attr('width') - baseSettings.margin.left - baseSettings.margin.right,
+    height: +svg.attr('height') - baseSettings.margin.top - baseSettings.margin.bottom
+}
+
+let settings = Object.assign(baseSettings, extendedSettings);
+
+d3.csv('data/letter-frequency', cast, main);
+
+function cast(d) {
+    d.frequency = +d.frequency;
+    return d;
+}
+
+function main(data) {
+    update(data);
+    setResizeEvent(data);
+}
+
+function setSize(data) {
+    svg.attr('width', window.innerWidth).attr('height', 600)
+
+    settings.width = +svg.attr('width') - baseSettings.margin.left - baseSettings.margin.right;
+    settings.height = +svg.attr('height') - baseSettings.margin.top - baseSettings.margin.bottom;
+}
+
+function drawChart(data) {
+    x = d3.scaleBand().rangeRound([0, settings.width]).padding(0.1);
+    y = d3.scaleLinear().rangeRound([settings.height, 0]);
+
+    g.attr('transform', `translate(${settings.margin.left}, ${settings.margin.top})`);
+
+    x.domain(data.map(d => d.letter));
+    y.domain([0, d3.max(data, d => d.frequency)]);
+
+    let selectedBarElm = g.selectAll('.bar')
+        .data(data);
+
+    let newBarElm = selectedBarElm
+        .enter()
+        .append('rect')
+        .attr('class', 'bar');
+
+    selectedBarElm.merge(newBarElm)
+        .attr('x', d => x(d.letter))
+        .attr('y', d => y(d.frequency))
+        .attr('width', x.bandwidth())
+        .attr('height', d => settings.height - y(d.frequency));
+}
+
+function drawAxis() {
+    let selectedXAxisElm = g.selectAll('.axis--x')
+        .data(['dummy'])
+
+    let newXAxisElm = selectedXAxisElm.enter()
+        .append('g')
+        .attr('class', 'axis axis--x')
+    
+    selectedXAxisElm.merge(newXAxisElm)
+        .attr('transform', `translate(0, ${settings.height})`)
+        .call(d3.axisBottom(x));
+
+    let selectedYAxisElm = g.selectAll('.axis--y')
+        .data(['dummy'])
+
+    let newYAxisElm = selectedYAxisElm.enter()
+        .append('g')
+        .attr('class', 'axis axis--y')
+
+    selectedYAxisElm.merge(newYAxisElm)
+        .call(d3.axisLeft(y).ticks(10, '%'))
+}
+
+function update(data) {
+    setSize(data);
+    drawChart(data);
+    drawAxis();
+}
+
+function setResizeEvent(data) {
+    var resizeTimer;
+    var interval = Math.floor(1000 / 60 * 10);
+
+    window.addEventListener('resize', (event) => {
+        if (resizeTimer !== false) {
+            clearTimeout(resizeTimer);
+        }
+
+        resizeTimer = setTimeout(() => {
+            svg.attr('width', window.innerWidth).attr('height', 600);
+
+            update(data);
+        }, interval)
+    })
+}
+
+
+
+</script>
+
+
+</body>
+</html>

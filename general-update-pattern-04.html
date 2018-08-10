@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>General Update Pattern 04</title>
+
+<style>
+
+text {
+  font: bold 48px monospace;
+}
+
+.enter {
+  fill: green;
+}
+
+.update {
+  fill: #333;
+}
+
+.exit {
+  fill: brown;
+}
+
+</style>
+
+</head>
+<body>
+
+<h1></h1>
+<svg width="1400" height="500"></svg>
+<button>Update</button>
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+
+var alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
+
+var svg = d3.select("svg");
+var width = +svg.attr("width");
+var height = +svg.attr("height");
+var g = svg.append("g").attr("transform", "translate(32," + (height / 2) + ")");
+
+var title = d3.select('h1');
+
+console.log(title);
+
+var loadedData;
+var randomCategories;
+var randomCategory = [];
+
+function update(data) {
+    var t = d3.transition()
+        .duration(750);
+
+    var titleText = title.selectAll('span')
+        .data(randomCategory, function(c) {
+            return c;
+        });
+
+    titleText.exit()
+        .attr('class', 'exit')
+        .remove();
+
+    titleText.attr('class', 'update');
+
+    titleText.enter().append('span')
+        .text(function(c) {
+            return c;
+        })
+
+
+
+    var text = g.selectAll('text')
+        .data(data, function(d) {
+            // console.log(d);
+            return d;
+        });
+
+    text.exit()
+        .attr('class', 'exit')
+        .transition(t)
+            .attr('y', 60)
+            .style('fill-opacity', 1e-6)
+            .remove();
+
+    text.attr('class', 'update')
+        .attr('y', 0)
+        .style('fill-opacity', 1)
+        .transition(t)
+            .attr('x', function(d, i) {
+                return i * 100;
+            });
+
+    text.enter().append('text')
+        .attr('class', 'enter')
+        .attr('dy', '0.35em')
+        .attr('y', -60)
+        .attr('x', function(d, i) {
+            return i * 100;
+        })
+        .style('fill-opacity', 1e-6)
+        .text(function(d) {
+            return d;
+        })
+        .transition(t)
+            .attr('y', 0)
+            .style('fill-opacity', 1);
+}
+
+
+d3.csv('data/col.csv', function(d) {
+    return d;
+}, function(error, data) {
+    loadedData = data;
+    // update(loadedData);
+    // console.log(loadedData);
+    // console.log(Object.keys(loadedData[0]));
+    randomCategories = Object.keys(loadedData[0]);
+});
+
+
+
+
+
+document.querySelector('button').addEventListener('click', function() {
+    var sortedData = [];
+
+    var randomNumber = Math.floor(Math.random() * randomCategories.length);
+
+    randomCategory = [];
+    randomCategory.push(randomCategories[randomNumber]);
+
+    loadedData.map(
+        function(d) {
+            sortedData.push(d[randomCategory[0]]);
+        }
+    )
+
+    update(
+        d3.shuffle(sortedData)
+            .slice(0, Math.floor(Math.random() * 26))
+            .sort()
+    );
+}, false);
+
+
+
+</script>
+
+
+</body>
+</html>

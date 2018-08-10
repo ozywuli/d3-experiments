@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Responsive Chart 1</title>
+
+<style>
+html,body,#graph {
+    width: 100%;
+    height: 100%;
+}
+
+.valueLine{
+    fill:none;
+    stroke:blue;
+}
+
+.tick line {
+    stroke-dasharray: 2 2 ;
+    stroke: #ccc;
+}
+
+</style>
+
+</head>
+<body>
+
+<a href="https://bl.ocks.org/shimizu/089aaa943225b5838e4c415f2998a8f6">https://bl.ocks.org/shimizu/089aaa943225b5838e4c415f2998a8f6</a>
+
+<div id="graph"></div>    
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+
+
+
+!(function(){
+    let width;
+    let height
+    let chartWidth;
+    let chartHeight;
+    let margin;
+    let svg = d3.select("#graph").append("svg");
+    let axisLayer = svg.append("g").classed("axisLayer", true);
+    let chartLayer = svg.append("g").classed("chartLayer", true);
+    
+    let xScale = d3.scaleTime();
+    let yScale = d3.scaleLinear();
+    
+    
+    d3.csv("data/date.csv", cast,  main);
+    
+
+    function cast(d) {
+        d.date = new Date(d.date);
+        d.value = +d.value;
+        return d;
+    }
+    
+
+    function main(data) {
+        update(data)
+        setResizeEvent(data)
+    }
+    
+    function update(data) {
+        setSize(data)
+        drawAxis()
+        drawChart(data)        
+    }
+
+    function setResizeEvent(data) {
+        var resizeTimer;
+        var interval = Math.floor(1000 / 60 * 10);
+         
+        window.addEventListener('resize', (event) => {
+            if (resizeTimer !== false) {
+                clearTimeout(resizeTimer);
+            }
+            resizeTimer = setTimeout(function () {
+                update(data)
+            }, interval);
+        });
+    }
+    
+    
+    function setSize(data) {
+        width = document.querySelector("#graph").clientWidth
+        height = document.querySelector("#graph").clientHeight
+    
+        margin = {
+            top: 40, 
+            left: 60, 
+            bottom: 40, 
+            right: 60 
+        }
+        
+        chartWidth = width - (margin.left+margin.right)
+        chartHeight = height - (margin.top+margin.bottom)
+        
+        svg.attr("width", width).attr("height", height)
+        axisLayer.attr("width", width).attr("height", height)
+        
+        chartLayer
+            .attr("width", chartWidth)
+            .attr("height", chartHeight)
+            .attr("transform", `translate(${margin.left}, ${margin.top})`)
+
+            
+        xScale.domain([new Date("2016/1/1"), new Date("2016/4/1")]).range([0, chartWidth])
+        yScale.domain([500, d3.max(data, (d) => { return d.value})]).range([chartHeight, 0])
+            
+    }
+    
+    function drawChart(data) {
+        let t = d3.transition()
+            .duration(1000)
+            .ease(d3.easeLinear)
+            .on("start", (d) => { console.log("transiton start") })
+            .on("end", (d) => { console.log("transiton end") })
+        
+        
+        let lineGen = d3.line()
+            .x((d) => { return xScale(d.date) })
+            .y((d) => { return yScale(d.value) })
+            .curve(d3.curveStep)
+           
+        let selectedLineElm = chartLayer.selectAll(".valueLine")
+            .data([data])
+        
+        let newLineElm = selectedLineElm.enter().append("path")
+            .attr("class", "valueLine")
+
+        selectedLineElm.merge(newLineElm)
+            .attr("d", lineGen)
+        
+    }
+    
+    function drawAxis(){
+        let yAxis = d3.axisLeft(yScale)
+            .tickSizeInner(-chartWidth)
+
+        // y axis 
+        
+        let selectedYAxisElm = axisLayer.selectAll(".y")
+            .data(["dummy"])
+            
+        let newYAxisElm = selectedYAxisElm.enter().append("g")
+            .attr("class", "axis y")
+            
+        selectedYAxisElm.merge(newYAxisElm)
+            .attr("transform", `translate(${margin.left}, ${margin.top})`)
+            .call(yAxis);
+
+        // x axis
+            
+        let xAxis = d3.axisBottom(xScale)
+    
+        let selectedXAxisElm = axisLayer.selectAll(".x")
+            .data(["dummy"])
+            
+        let newXAxisElm = selectedXAxisElm.enter().append("g")
+            .attr("class", "axis x")
+    
+        selectedXAxisElm.merge(newXAxisElm)
+            .attr("transform", `translate(${margin.left}, ${chartHeight + margin.top})`)
+            .call(xAxis);
+        
+    }
+}());
+
+
+
+</script>
+
+
+</body>
+</html>

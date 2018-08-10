@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Animated Bar Chart</title>
+
+
+<style>
+
+.bar {
+  fill: steelblue;
+}
+
+.bar:hover {
+  fill: brown;
+}
+
+.axis--x path {
+  display: none;
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="graph">
+    <svg width="960" height="500"></svg>    
+    <!-- <div class="x-axis"></div> -->
+</div>
+
+
+<button>Update</button>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenMax.min.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+let DATA;
+
+var svg = d3.select('svg');
+
+var margin = {
+    top: 20,
+    right: 20,
+    bottom: 30,
+    left: 40
+}
+
+var width = +svg.attr('width') - margin.left - margin.right;
+var height = +svg.attr('height') - margin.top - margin.bottom;
+
+
+var x = d3.scaleBand().rangeRound([0, width]).padding(0.1);
+var y = d3.scaleLinear().rangeRound([height, 0]);
+
+var group = svg.append('g')
+    .attr('class', 'group')
+    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+let bars = group.append('g')
+    .attr('class', 'bars');
+
+
+let xAxis = group.append('g')
+    .attr('class', 'axis axis--x')
+    .attr('transform', `translate( 0, ${height} )`)
+
+let yAxis = group.append('g')
+    .attr('class', 'axis axis--y');
+
+
+// var xaxis = d3.select('.x-axis')
+//     .attr('style', 'width: 100%; height: 30px;')
+
+
+
+
+
+
+d3.csv('data/letter-frequency.csv', function(d) {
+    d.frequency = +d.frequency;
+    return d;
+}, function(error, data) {
+    if (error) {
+        throw error;
+    }
+
+    init(data);
+});
+
+function preprocess(data) {
+    data = d3.shuffle([...data]);
+    return data.map((d, i) => ({
+        id: i,
+        letter: d.letter,
+        frequency: d.frequency
+    }));
+}
+
+
+function init(data) {
+    DATA = data;
+    update(preprocess(DATA));
+}
+
+// (Math.random() / 10)
+// 
+
+let initial = true;
+
+function update(data) {
+    var t = d3.transition()
+        .duration(750);
+    
+    data.map((d, i) => {
+        d.frequency = Math.random() / 10;
+    });
+
+
+    // console.log(data);
+
+    // map x data to x range
+    x.domain(data.map(function(d) { return d.letter; }));
+    // map y data to y range
+    y.domain([0, d3.max(data, function(d) { return d.frequency;  })]);
+
+
+
+    /*------------------------------------*\
+      AXIS
+    \*------------------------------------*/
+
+        /*------------------------------------*\
+          ENTER
+        \*------------------------------------*/
+
+
+        if (initial) {
+            xAxis
+                .call(d3.axisBottom(x))
+
+            yAxis
+                .call(d3.axisLeft(y).ticks(10, '%'))
+
+            initial = false;
+        } else {
+            let TL = new TimelineMax({
+                onComplete() {
+                    xAxis
+                        .call(d3.axisBottom(x))
+
+                    TLa.play();
+                }
+            })
+
+            TL
+                .fromTo(
+                    'text',
+                    0.5,
+                    {
+                        opacity: 1,
+                        scale: 1,
+
+                    },
+                    {
+                        opacity: 0,
+                        scale: 0,
+                        transformOrigin:'50% 50%'
+                    }
+                )
+
+            let TLa = new TimelineMax({
+                onComplete() {
+
+                }
+            });
+
+            TLa
+                .staggerFromTo(
+                    'text',
+                    0.5,
+                    {
+                        opacity: 0,
+                        scale: 0,
+                    },
+                    {
+                        opacity: 1,
+                        scale: 1,
+                        ease: Elastic. easeOut.config( 1, 0.3)
+                    },
+                    0.01
+                )
+
+            TLa.pause();
+
+        }
+
+
+
+        
+
+
+
+
+        // xAxis
+        //     .call(d3.axisBottom(x))
+                // .selectAll('text')
+                //     .attr('style', 'transform: scale(0, 0);')
+
+                //     .transition()
+                //     .delay(100)
+                //     .duration(500)
+                //         .attr('style', 'transform: scale(1, 1);')
+        // let cell = xaxis.selectAll('.cell')
+        //     .data(data, (d) => {
+        //         return d;
+        //     });
+
+        // let cellEnter = cell
+        //     .enter().append('div')
+        //     .attr('class', 'cell')
+        //     .text((d) => {
+        //         return d.letter;
+        //     })
+        //             .transition()
+        //                 .duration(500)
+        //             .attr('style', 'opacity: 0')
+        //             .transition()
+        //                 .duration(500)
+        //                 .attr('style', 'opacity: 1;')
+        /*------------------------------------*\
+          UPDATE
+        \*------------------------------------*/
+
+        // xaxis.select('.cell')
+        //     .text((d) => {
+        //         return d.letter;
+        //     })
+
+
+        /*------------------------------------*\
+          EXIT
+        \*------------------------------------*/
+        // cell
+        //     .exit()
+        //             .transition()
+        //                 .duration(500)
+        //             .attr('style', 'opacity: 0')
+        //     .remove();
+
+
+
+    /*------------------------------------*\
+      BAR
+    \*------------------------------------*/
+
+    let bar = bars.selectAll('.bar-wrapper')
+        .data(data, (d) => {
+            return d.id;
+        });
+
+        console.log(data);
+
+
+        /*------------------------------------*\
+          EXIT SELECTION
+        \*------------------------------------*/
+        bar
+            .exit()
+            .remove();
+
+
+
+        /*------------------------------------*\
+          UPDATE SELECTION
+        \*------------------------------------*/
+        bar.select('rect')
+            .transition(t)
+                .attr('y', function(d) { return y(d.frequency); })
+                .attr('height', function(d) { return height - y(d.frequency); });
+
+
+
+        // bar.select('.text-wrapper')
+        //     .attr('transform', 'scale(0.5, 0.5)')
+        //     .transition(t)
+        //     .attr('transform', 'scale(1, 1)')
+
+
+        // bar.select('text')
+        //     .transition(t)
+        //     .attr('transform', 'scale(0, 0)')
+        //     // .attr('transform', function(d) {
+        //     //     return `matrix(0 0 0 0 ${x(d.letter)} ${height + 10})`;
+        //     // })
+        //     .transition(t)
+        //     .attr('transform', 'scale(1, 1)')
+        //     // .attr('transform', function(d) {
+        //     //     return `matrix(1 0 0 1 ${x(d.letter)} ${height + 10})`;
+        //     // })
+        //     .text((d) => {
+        //         return d.letter;
+        //     })
+
+
+
+
+        /*------------------------------------*\
+          ENTER SELECTION
+        \*------------------------------------*/
+        let barEnter = bar
+            .enter().append('g')
+            .attr('class', 'bar-wrapper')
+
+        let rect = barEnter.append('rect')
+            .attr('class', 'bar')
+            .attr('x', function(d) { return x(d.letter); })
+            .attr('y', function(d) { return height; })
+            .attr('width', x.bandwidth())
+            .transition(t)
+                .attr('y', function(d) { return y(d.frequency); })
+                .attr('height', function(d) { return height - y(d.frequency); });
+
+
+
+        // let textWrapper = barEnter.append('g')
+        //     .attr('class', 'text-wrapper')
+        //     .attr('x', function(d) { return x(d.letter); })
+        //     .attr('y', function(d) { return height + 10; })
+
+
+        // let text = barEnter.append('text')
+        // // let text = textWrapper.append('text')
+        //     .text((d) => {
+        //         return d.letter;
+        //     })
+        //     .attr('x', function(d) { return x(d.letter); })
+        //     .attr('y', function(d) { return height + 10; })
+            
+
+
+
+}
+
+document.querySelector('button').addEventListener('click', function() {
+    update(preprocess(DATA));
+}, false);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+
+
+</body>
+</html>

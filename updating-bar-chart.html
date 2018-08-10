@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Updating bar chart</title>
+</head>
+<body>
+
+<div class="chart"></div>
+<script src="https://d3js.org/d3.v4.0.0-alpha.21.min.js"></script>
+
+<script>
+/**
+ * 
+ */
+const DATA = [10, 20, 40, 70, 50, 30, 90, 120, 5, 65, 75];
+
+/**
+ * 
+ */
+const WIDTH = 800;
+/**
+ * 
+ */
+const HEIGHT = 400;
+/**
+ * 
+ */
+const INNER_HEIGHT = HEIGHT - 20;
+/**
+ * 
+ */
+const BAR_WIDTH = 36;
+/**
+ * 
+ */
+const BAR_GAP = 4;
+
+/**
+ * 
+ */
+function preprocess(data) {
+    data = d3.shuffle([...data]);
+    return data.map((d, i) => ({
+        id: i,
+        value: d
+    }));
+}
+
+//
+let scale = d3.scaleLinear()
+    .domain([0, d3.max(DATA)])
+    .range([0, INNER_HEIGHT]);
+
+/**
+ * 
+ */
+function y(d) {
+    return HEIGHT - scale(d.value);
+}
+
+/**
+ * 
+ */
+function height(d) {
+    return scale(d.value);
+}
+
+
+//
+let svg = d3.select('body').append('svg')
+    .attr('width', WIDTH)
+    .attr('height', HEIGHT)
+    .append('g');
+
+
+/**
+ * 
+ */
+function update(data) {
+    let t = d3.transition()
+        .duration(750);
+
+    let bar = svg.selectAll('g')
+        .data(data, (d) => {
+            return d.id
+        });
+
+
+    /*------------------------------------*\
+      EXIT SELECTION
+    \*------------------------------------*/
+    bar
+        .exit()
+        .remove();
+
+
+    /*------------------------------------*\
+      UPDATE SELECTION
+    \*------------------------------------*/
+    bar
+        .transition(t)
+        .attr('transform', (d, i) => {
+            return `translate( ${ i * (BAR_WIDTH + BAR_GAP) }, ${y(d)} )`;
+        })
+
+    bar.select('rect')
+        .transition(t)
+        .attr('height', height);
+
+
+    bar.select('text')
+        .transition(t)
+        .tween('text', function(d) {
+            let v0 = this.textContent || '0';
+            let v1 = d.value;
+            let i = d3.interpolateRound(v0, v1);
+
+            return (t) => {
+                this.textContent = i(t);
+            }
+        })
+
+
+    /*------------------------------------*\
+      ENTER SELECTION
+    \*------------------------------------*/
+    let barEnter = bar
+        .enter().append('g')
+        .attr('transform', (d, i) => {
+            return `translate(${i * (BAR_WIDTH + BAR_GAP)}, ${INNER_HEIGHT})`;
+        })
+
+    barEnter
+        .transition(t)
+        .attr('transform', (d, i) => {
+            return `translate(${i * (BAR_WIDTH + BAR_GAP)}, ${y(d)})`;
+        });
+
+    let rect = barEnter.append('rect')
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', BAR_WIDTH)
+        .attr('height', 0);
+
+    rect
+        .transition(t)
+        .attr('height', height);
+
+    let gee = barEnter.append('g');
+
+    let text = barEnter.append('g').append('text')
+        .text((d) => {
+            return d.value
+        })
+        .attr('text-anchor', 'middle')
+        .attr('dx', BAR_WIDTH / 2)
+        .attr('dy', -2);
+
+} // end `update()`
+
+//
+update(preprocess(DATA));
+
+
+//
+d3.interval(() => {
+    update(preprocess(DATA));
+}, 2000);
+
+
+</script>
+
+</body>
+</html>
+
