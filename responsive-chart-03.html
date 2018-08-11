@@ -29,11 +29,17 @@
 
 <script>
 
+//==============================================================================
+// Globals
+//==============================================================================
 var svg = d3.select('svg');
 var g = svg.append('g');
 var x;
 var y;
 
+//==============================================================================
+// Settings
+//==============================================================================
 let baseSettings = {
     margin: {
         top: 20,
@@ -50,6 +56,10 @@ let extendedSettings = {
 
 let settings = Object.assign(baseSettings, extendedSettings);
 
+
+//==============================================================================
+// 
+//==============================================================================
 d3.csv('data/letter-frequency', cast, main);
 
 function cast(d) {
@@ -73,7 +83,10 @@ function drawChart(data) {
     x = d3.scaleBand().rangeRound([0, settings.width]).padding(0.1);
     y = d3.scaleLinear().rangeRound([settings.height, 0]);
 
-    g.attr('transform', `translate(${settings.margin.left}, ${settings.margin.top})`);
+    g.attr(
+        'transform', 
+        `translate(${settings.margin.left}, ${settings.margin.top})`
+    );
 
     x.domain(data.map(d => d.letter));
     y.domain([0, d3.max(data, d => d.frequency)]);

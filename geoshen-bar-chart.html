@@ -24,13 +24,30 @@
 </head>
 <body>
 
-<svg width="960" height="500"></svg>
+<svg></svg>
+
+<br>
+
+<select>
+    <option value="servingSize">Serving Size</option>
+    <option value="calories">Calories</option>
+    <option value="caloriesFromFat">Calories from fat</option>
+</select>
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
 
 <script>
 
+
+
 var svg = d3.select('svg');
+var t = d3.transition()
+        .duration(1250);
+
+let gData;
+let gType;
+
+svg.attr("width", window.innerWidth).attr("height", 500);
 
 const baseSettings = {
     margin: {
@@ -51,48 +68,127 @@ const settings = Object.assign(baseSettings, extendedSettings);
 var g = svg.append('g')
     .attr('transform', `translate(${settings.margin.left}, ${settings.margin.top})`);
 
-d3.csv('data/letter-frequency.csv', function(d) {
-    d.frequency = +d.frequency;
+
+
+d3.csv('data/pandaExpress.csv', function(d) {
+    for (let type in d) {
+        if (type !== 'name') {
+            d[type] = +d[type];
+        }
+    }
+    
     return d;
 }, function(error, data) {
     if (error) {
         throw error;
     }
 
+    window.setTimeout(() => {
+        update(data, 'servingSize');
+        
+    }, 2000);
+
+
+
+    function detectChange(event) {
+        update(data, event.target.value)
+    }
+
+    document.querySelector('select').addEventListener('change', detectChange)
+
+    setResizeEvent();
+    
+})
+
+function setSize() {
+    svg.attr("width", window.innerWidth).attr("height", 500)
+
+    settings.width = +svg.attr('width') - settings.margin.left - settings.margin.right;
+    settings.height = +svg.attr('height') - settings.margin.top - settings.margin.bottom;
+}
+
+function update(data, type) {
+    gData = data;
+    gType = type;
+
+    setSize();
+
     var x = d3.scaleBand()
-        .domain(data.map(d => d.letter))
         .rangeRound([0, settings.width])
         .padding(0.1);
 
     var y = d3.scaleLinear()
-        .domain([ 0, Math.round(d3.max(data, d => d.frequency) * 100) / 100 ]).rangeRound([settings.height, 0]);
+        .rangeRound([settings.height, 0]);
 
     g.append('g')
-        .attr('class', 'axis axis--x')
+        .attr('class', 'axis axis--x');
+
+    g.append('g')
+        .attr('class', 'axis axis--y')
+
+    g.append('g')
+        .attr('class', 'axis axis--grid')
+
+
+    x.domain(data.map(d => d.name))
+    y.domain([ 0, d3.max(data, d => d[type])])
+
+    console.log(x.bandwidth());
+
+    let bars = g.selectAll('.bar')
+        .remove()
+        .exit()
+        .data(data)
+
+    let newBars = bars.enter()
+        .append('rect')
+            .attr('class', 'bar')
+
+    bars.merge(newBars)
+        .attr('x', d => x(d.name))
+        .attr('y', d => settings.height)
+        .attr('width', x.bandwidth())
+        .attr('height', 0)
+        .transition(t)
+            .ease(d3.easeCircleInOut)
+            .delay(function(d, i) {
+                return i * 75
+            })
+            .attr('height', d => { 
+                return settings.height - y(d[type]) 
+            })
+            .attr('y', d => y(d[type]))
+
+    svg.select('.axis--x')
         .attr('transform', `translate(0, ${settings.height})`)
         .call(d3.axisBottom(x));
 
-    g.append('g')
-        .attr('class', 'axis axis--y')
-        .call(d3.axisLeft(y).ticks(10, '%'))
+    svg.select('.axis--y')
+        .call(d3.axisLeft(y).ticks(10))
 
-    g.append('g')
-        .attr('class', 'axis axis--y')
-        // .attr('transform', `translate(${settings.width}, 0)`)
+    svg.select('.axis--grid')
         .call(d3.axisLeft(y).tickFormat('').tickSize(-settings.width))
-
     
-    g.selectAll('bar')
-        .data(data)
-        .enter()
-        .append('rect')
-            .attr('class', 'bar')
-            .attr('x', d => x(d.letter))
-            .attr('y', d => y(d.frequency))
-            .attr('width', x.bandwidth())
-            .attr('height', d => settings.height - y(d.frequency))
+} // update
 
-})
+
+
+function setResizeEvent(data) {
+    var resizeTimer;
+    var interval = Math.floor(1000 / 60 * 10);
+     
+    window.addEventListener('resize', (event) => {
+        if (resizeTimer !== false) {
+            clearTimeout(resizeTimer);
+        }
+        resizeTimer = setTimeout(function () {
+            console.log();
+            svg.attr("width", window.innerWidth).attr("height", 500);
+            update(gData, gType);
+        }, interval);
+    });
+}
+
 
 
 </script>
