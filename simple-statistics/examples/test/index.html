@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="https://unpkg.com/simple-statistics@6.1.1/dist/simple-statistics.min.js"></script>
+
+<!-- <script src="../../simple_statistics.js"></script> -->
+<script>
+
+(async function() {
+const us = await d3.json('unemployment.json');
+let array = [1, 2, 3, 4, 5, 6]
+let array2 = [1, 3, 4, 7, 8, 12, 15, 16, 20];
+
+// console.log(ss.jenks([1, 2, 3, 4, 5], 4));
+// .domain(ssck.ckmeans(unemployment.map(function(d) { return +d.rate; }), 9).map(function(cluster) {return cluster[0];}))
+// console.log(ss.equalIntervalBreaks(array2, 4));
+// console.log(ss.equalIntervalBreaks(array2, 4).map(item => Math.floor(item)));
+// console.log(ss.equalIntervalBreaks(array, 4));
+// console.log(ss.ckmeans(array, 4).map(function(cluster) { return cluster[0]}));
+
+
+
+
+console.log(ss.sampleStandardDeviation(array));
+console.log(ss.quantile(array, 0.5));
+
+console.log(d3.deviation(array));
+console.log(d3.quantile(array, 0.5));
+
+
+
+
+})();
+
+</script>
+</body>
+</html>

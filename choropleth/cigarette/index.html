@@ -1,0 +1,254 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<html>
+<head>
+
+<link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:400italic,600italic,700italic,200,300,400,600,700,900">
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+<style>
+
+body, h1, h2, h3, p {
+  margin: 0;
+  padding: 0;
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 1em;
+  color: #333;
+  font-weight: 400;
+}
+
+#content {
+  margin: 5px;
+  padding: 20px;
+  width: 805px;
+  border: 1px solid #ccc;
+}
+
+#map {
+  margin: 10px 0px 0px 0px;
+  padding: 0px;
+}
+
+h1, h2 {
+  line-height: 1em;
+  font-size: 1.75em;
+  font-weight: 900;
+  color: #000;
+}
+
+h2.year {
+  margin: 10px 0px 0px 0px;
+  font-size: 1.3em;
+  font-weight: 700;
+}
+
+p {
+  margin: 10px 0px 0px 0px;
+}
+
+.county {
+  fill: #fff;
+}
+
+.states {
+  fill: none;
+  stroke: #fff;
+  stroke-linejoin: round;
+}
+
+input {
+  display: block;
+  width: 200px;
+  margin: 10px 0px 0px 0px;
+}
+
+#legend text {
+  font-size: 0.9em;
+  color: #333;
+  font-weight: 400;
+}
+
+.tooltip {
+  position: absolute;
+  padding: 7px;
+  font-size: 0.9em;
+  pointer-events: none;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+
+  -moz-box-shadow:    3px 3px 10px 0px rgba(0, 0, 0, 0.25);
+  -webkit-box-shadow: 3px 3px 10px 0px rgba(0, 0, 0, 0.25);
+  box-shadow:         3px 3px 10px 0px rgba(0, 0, 0, 0.25);
+}
+
+.tooltip p {
+  margin: 0;
+  padding: 0;
+}
+
+.tooltip table {
+  margin: 0;
+  padding: 0;
+  border-collapse: collapse;
+}
+
+.wide {
+  width: 140px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="content">
+	<h1>U.S. Daily Cigarette Smoking Rate, 1996-2012</h1>
+	<h2 class="year"></h2>
+	<div class="slider"></div>
+	<div id="map"></div>
+	<p>Source: Institute for Health Metrics and Evaluation.</p>
+</div>
+
+<script>
+var margin = {top: 20, right: 20, bottom: 20, left: 20};
+var	width = 800 - margin.left - margin.right;
+var height = 500 - margin.top - margin.bottom;
+var formatPercent = d3.format(".1%");
+
+var svg = d3.select("#map").append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+	.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+tooltip = d3.select("body").append("div")
+	.attr("class", "tooltip")
+	.style("opacity", 0);
+
+queue()
+	.defer(d3.csv, "smoking-data.csv")
+	.defer(d3.json, "us.json")
+	.await(ready);
+
+// var legendText = ["", "10%", "", "15%", "", "20%", "", "25%"];
+// var legendColors = ["#fff7bc", "#fee391", "#fec44f", "#fe9929", "#ec7014", "#cc4c02", "#993404", "#662506"];
+
+
+function ready(error, data, us) {
+
+	var counties = topojson.feature(us, us.objects.counties);
+
+	data.forEach(function(d) {
+		d.year = +d.year;
+		d.fips = +d.fips;
+		d.rate = +d.rate;
+	});
+
+	var dataByCountyByYear = d3.nest()
+		.key(function(d) { return d.fips; })
+		.key(function(d) { return d.year; })
+		.map(data);
+
+	counties.features.forEach(function(county) {
+		county.properties.years = dataByCountyByYear[+county.id]
+	});
+
+	var color = d3.scale.threshold()
+		.domain([10, 12.5, 15, 17.5, 20, 22.5, 25])
+		.range(["#fff7bc", "#fee391", "#fec44f", "#fe9929", "#ec7014", "#cc4c02", "#993404", "#662506"]);
+
+	var projection = d3.geo.albersUsa()
+		.translate([width / 2, height / 2]);
+
+	var path = d3.geo.path()
+		.projection(projection);
+
+	var countyShapes = svg.selectAll(".county")
+		.data(counties.features)
+		.enter()
+		.append("path")
+			.attr("class", "county")
+			.attr("d", path);
+
+	countyShapes
+		.on("mouseover", function(d) {
+			tooltip.transition()
+			.duration(250)
+			.style("opacity", 1);
+			tooltip.html(
+			"<p><strong>" + d.properties.years[1996][0].county + ", " + d.properties.years[1996][0].state + "</strong></p>" +
+			"<table><tbody><tr><td class='wide'>Smoking rate in 1996:</td><td>" + formatPercent((d.properties.years[1996][0].rate)/100) + "</td></tr>" +
+			"<tr><td>Smoking rate in 2012:</td><td>" + formatPercent((d.properties.years[2012][0].rate)/100) + "</td></tr>" +
+			"<tr><td>Change:</td><td>" + formatPercent((d.properties.years[2012][0].rate-d.properties.years[1996][0].rate)/100) + "</td></tr></tbody></table>"
+			)
+			.style("left", (d3.event.pageX + 15) + "px")
+			.style("top", (d3.event.pageY - 28) + "px");
+		})
+		.on("mouseout", function(d) {
+			tooltip.transition()
+			.duration(250)
+			.style("opacity", 0);
+		});
+
+	svg.append("path")
+		.datum(topojson.feature(us, us.objects.states, function(a, b) { return a !== b; }))
+			.attr("class", "states")
+			.attr("d", path);
+
+	// var legend = svg.append("g")
+	// 	.attr("id", "legend");
+
+	// var legenditem = legend.selectAll(".legenditem")
+	// 	.data(d3.range(8))
+	// 	.enter()
+	// 	.append("g")
+	// 		.attr("class", "legenditem")
+	// 		.attr("transform", function(d, i) { return "translate(" + i * 31 + ",0)"; });
+
+	// legenditem.append("rect")
+	// 	.attr("x", width - 240)
+	// 	.attr("y", -7)
+	// 	.attr("width", 30)
+	// 	.attr("height", 6)
+	// 	.attr("class", "rect")
+	// 	.style("fill", function(d, i) { return legendColors[i]; });
+
+	// legenditem.append("text")
+	// 	.attr("x", width - 240)
+	// 	.attr("y", -10)
+	// 	.style("text-anchor", "middle")
+	// 	.text(function(d, i) { return legendText[i]; });
+
+	function update(year){
+		// slider.property("value", year);
+		d3.select(".year").text(year);
+		countyShapes.style("fill", function(d) {
+            if (d.properties.years) {
+                return color(d.properties.years[year][0].rate)
+            }
+		});
+	}
+
+	// var slider = d3.select(".slider")
+	// 	.append("input")
+	// 		.attr("type", "range")
+	// 		.attr("min", 1996)
+	// 		.attr("max", 2012)
+	// 		.attr("step", 1)
+	// 		.on("input", function() {
+	// 			var year = this.value;
+	// 			update(year);
+	// 		});
+
+update(1996);
+
+}
+
+d3.select(self.frameElement).style("height", "685px");
+</script>
+</body>
+</html>

@@ -9,6 +9,12 @@ scales.quantize = d3.scale.quantize()
         return `q${i}-9`; 
     }));
 
+scales.quantile = d3.scale.quantile()
+    .domain([0, .15])
+    .range(d3.range(9).map(function(i) {
+        return `q${i}-9`; 
+    }));
+
 let path = d3.geo.path();
 
 let svg = d3.select('body').append('svg')
@@ -36,14 +42,18 @@ function ready(error, us, unemployment) {
             .enter().append('path')
             .attr('d', path);
 
-        console.log(topojson.object(us, us.objects.counties).geometries);
+        // console.log(topojson.object(us, us.objects.counties).geometries);
 
     d3.selectAll('input').on('change', function() {
         setScale(this.id);
     });
 
     function setScale(s) {
-        counties.attr('class', function(d) { return scales[s](rateById[d.id]); })
+        console.log(s);
+        counties.attr('class', function(d) { 
+            // console.log(scales[s](rateById[d.id]));
+            return scales[s](rateById[d.id]); 
+        })
     }
 
     setScale('jenks9');
@@ -53,3 +63,4 @@ function ready(error, us, unemployment) {
     //     .attr('class', 'states')
     //     .attr('d', path);
 }
+

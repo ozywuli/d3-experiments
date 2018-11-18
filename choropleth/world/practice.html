@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+  .countries {
+    fill: none;
+    stroke: #fff;
+    stroke-linejoin: round;
+  }
+  .legendThreshold {
+      font-size: 12px;
+      font-family: sans-serif;
+  }
+  .caption {
+      fill: #000;
+      text-anchor: start;
+      font-weight: bold;
+  }
+</style>
+<svg width="960" height="600"></svg>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.24.0/d3-legend.js"></script>
+<script>
+
+// svg selector
+var svg = d3.select('svg');
+var width = +svg.attr('width');
+var height = +svg.attr('height');
+
+// map and projection
+var projection = d3.geoNaturalEarth()
+    .scale(width / 2 / Math.PI)
+    .translate([width / 2, height / 2])
+
+var path = d3.geoPath()
+    .projection(projection)
+
+// data and color scale
+var data = d3.map();
+var colorScheme = d3.schemeReds[6];
+colorScheme.unshift('#eee');
+var colorScale = d3.scaleThreshold()
+    .domain([1, 6, 11, 26, 101, 1001])
+    .range(colorScheme);
+
+
+
+
+let promises = [
+    d3.json('http://enjalot.github.io/wwsd/data/world/world-110m.geojson'),
+    d3.csv('mooc-countries.csv', function(d) {
+        d.forEach(item => {
+            data.set(item.code, +item.total);
+        })
+    })
+]
+
+Promise.all(promises).then(ready);
+
+function ready(values) {
+    values[0].get(function(topo) {
+        console.log(topo);
+        svg.append('g')
+            .attr('class', 'countries')
+            .selectAll('path')
+            .data(topo.features)
+            .enter().append('path')
+                .attr('fill', function(d) {
+                    console.log(data);
+                    d.total = data.get(d.id) || 0;
+                    return colorScale(d.total);
+                })
+                .attr('d', path);
+    })
+}
+
+
+
+</script>

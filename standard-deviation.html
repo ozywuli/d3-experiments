@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+
+
+<script>
+const data = [
+    600,
+    470,
+    170,
+    430,
+    300
+];
+
+let dataLength = data.length;
+
+let total = data.reduce((a, b) => {
+    return a + b;
+})
+
+let mean = total / dataLength;
+
+let differences = data.map(a => {
+    return a - mean;
+})
+
+let variance = differences.reduce((a, b) => {
+    return a += (b * b);
+}, 0) / 5;
+
+let sd = Math.round(Math.sqrt(variance));
+
+console.log(sd);
+
+</script>
+</body>
+</html>
