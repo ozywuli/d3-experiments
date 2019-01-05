@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+
+<style>
+
+rect {
+    fill: greenyellow;
+}
+</style>
+</head>
+<body>
+<div class="container"></div>
+
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script>
+const data = [ 10, 20, 30, 40, 50 ];
+
+var container = d3.select('.container')
+var svg = container.append('svg');
+var g = svg.append('g');
+
+d3.select('g')
+    .selectAll('rect')
+    .data(data, function(d, x) {
+        return d;
+    })
+    .enter()
+    .append('rect')
+        .attr('x', function(d, x) {
+            return (x * 25);
+        })
+        .attr('y', function(d, y) {
+            return (100 - d);
+        })
+        .attr('width', 20)
+        .attr('height', function(d) { return d; })
+
+</script>
+
+</body>
+</html>
